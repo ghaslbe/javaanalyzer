@@ -18,16 +18,31 @@ from .registry import build_registry
 from .resolver import resolve_hierarchy, build_scope, resolve_method_body
 from .schema import init_db
 
+# text/URLs are often externalized here instead of living in .java sources --
+# no parsing, just raw full-text indexing so search still finds them
+RESOURCE_EXTENSIONS = (".properties", ".xml", ".yml", ".yaml")
+
 
 def _method_signature(method):
     params = ",".join(p.type_name or "?" for p in method.params)
     return f"{method.name}({params})"
 
 
+def _find_resource_files(repo_root, exclude):
+    found = set()
+    for ext in RESOURCE_EXTENSIONS:
+        found.update(glob.glob(os.path.join(repo_root, "**", f"*{ext}"), recursive=True))
+    return sorted(found - exclude)
+
+
 def build_index(repo_root, db_path, verbose=True):
     java_files = sorted(glob.glob(os.path.join(repo_root, "**", "*.java"), recursive=True))
     if verbose:
         print(f"found {len(java_files)} .java files under {repo_root}")
+
+    resource_files = _find_resource_files(repo_root, exclude=set(java_files))
+    if verbose:
+        print(f"found {len(resource_files)} resource file(s) ({', '.join(RESOURCE_EXTENSIONS)}) under {repo_root}")
 
     parsed_files = []
     errors = []
@@ -185,10 +200,27 @@ def build_index(repo_root, db_path, verbose=True):
             (pf.path, os.path.basename(pf.path), pf.path, file_id, "\n".join(pf.source_lines)),
         )
 
+    # resource files (properties/xml/yaml, ...) aren't Java and aren't parsed,
+    # but a text/URL externalized there should still turn up in search
+    resource_count = 0
+    for path in resource_files:
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+                content = fh.read()
+        except OSError:
+            continue
+        cur.execute("INSERT INTO files(path, package) VALUES (?, NULL)", (path,))
+        file_id = cur.lastrowid
+        cur.execute(
+            "INSERT INTO search(fqn, name, kind, path, ref_id, ref_kind, content) VALUES (?, ?, 'resource', ?, ?, 'file', ?)",
+            (path, os.path.basename(path), path, file_id, content),
+        )
+        resource_count += 1
+
     conn.commit()
 
     if verbose:
-        print(f"indexed {len(type_id_by_fqn)} types, {len(method_id_by_obj)} methods")
+        print(f"indexed {len(type_id_by_fqn)} types, {len(method_id_by_obj)} methods, {resource_count} resource file(s)")
         print(f"calls: {total_calls} total, {resolved_calls} resolved within the repo ({total_calls - resolved_calls} external/unresolved)")
     conn.close()
 

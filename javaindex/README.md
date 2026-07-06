@@ -47,6 +47,11 @@ Baut die Datenbank **komplett neu** (drop + recreate). Es gibt keinen
 inkrementellen Modus -- wenn sich der Code ändert, einfach denselben Befehl
 erneut laufen lassen, um den Index auf den aktuellen Stand zu bringen.
 
+Neben `.java` werden auch `.properties`, `.xml`, `.yml`/`.yaml` per Volltext
+mitindexiert (nicht geparst, nur roher Text) -- damit auch ausgelagerte
+Texte/URLs (Config, Connection-Strings, Log-Formate, ...) über die Suche
+gefunden werden, nicht nur Code.
+
 ## Suchen
 
 ```bash

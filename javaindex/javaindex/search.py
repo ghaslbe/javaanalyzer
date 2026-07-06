@@ -5,6 +5,7 @@ Usable as a library (search()) from the Flask backend, or as a CLI:
 """
 
 import argparse
+import os
 import sqlite3
 
 
@@ -236,9 +237,15 @@ def search_with_code(db_path, term, context=5, limit=30):
 
 def _format_occurrence(occ, indent=""):
     lines = []
-    where = f"{occ['class']}#{occ['method']}" if occ["method"] else (occ["class"] or "?")
+    if occ["method"]:
+        where = f"{occ['class']}#{occ['method']}"
+    elif occ["class"]:
+        where = occ["class"]
+    else:
+        where = os.path.basename(occ["path"])  # no class -- e.g. a .properties/.xml file
     lines.append(f"{indent}{where}")
-    lines.append(f"{indent}Package: {occ['package']}")
+    if occ["package"]:
+        lines.append(f"{indent}Package: {occ['package']}")
     lines.append(f"{indent}Datei:   {occ['path']}:{occ['line']}")
     for row in occ["code"]:
         marker = ">" if row["line"] == occ["line"] else " "
@@ -280,7 +287,7 @@ def main():
             else:
                 print("    genutzt von: (kein Aufrufer im indexierten Repo gefunden)")
         else:
-            classes = ", ".join(item.get("classes", [])) or "(keine Klasse -- z.B. Kommentar/Import-Bereich)"
+            classes = ", ".join(item.get("classes", [])) or "(keine Klasse -- z.B. Property-/Config-Datei, Kommentar oder Import-Bereich)"
             print(f"[text] {item['path']}")
             print(f"    Klassen: {classes}")
             for m in item.get("matches", []):
