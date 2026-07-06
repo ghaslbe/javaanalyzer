@@ -8,7 +8,6 @@ the database is simply dropped and rebuilt from scratch each time.
 """
 
 import argparse
-import glob
 import os
 import sys
 import time
@@ -22,36 +21,76 @@ from .schema import init_db
 # no parsing, just raw full-text indexing so search still finds them
 RESOURCE_EXTENSIONS = (".properties", ".xml", ".yml", ".yaml")
 
+_PROGRESS_MIN_INTERVAL = 0.15  # seconds -- don't hammer the terminal on fast loops
+_last_progress_at = [0.0]
+
+
+def _progress(msg, force=False):
+    """Overwrite the current terminal line -- avoids scrolling the terminal
+    to death over a 100k-file run. No-op when stdout isn't a live terminal
+    (redirected to a file/CI log), where \\r would just leave junk."""
+    if not sys.stdout.isatty():
+        return
+    now = time.time()
+    if not force and (now - _last_progress_at[0]) < _PROGRESS_MIN_INTERVAL:
+        return
+    _last_progress_at[0] = now
+    width = 100
+    sys.stdout.write("\r" + msg[:width].ljust(width))
+    sys.stdout.flush()
+
+
+def _progress_done():
+    if sys.stdout.isatty():
+        sys.stdout.write("\r" + " " * 100 + "\r")
+        sys.stdout.flush()
+
 
 def _method_signature(method):
     params = ",".join(p.type_name or "?" for p in method.params)
     return f"{method.name}({params})"
 
 
-def _find_resource_files(repo_root, exclude):
-    found = set()
-    for ext in RESOURCE_EXTENSIONS:
-        found.update(glob.glob(os.path.join(repo_root, "**", f"*{ext}"), recursive=True))
-    return sorted(found - exclude)
+def _scan_files(repo_root, verbose):
+    """Single directory walk for both .java and resource files -- avoids
+    doing five separate recursive globs over a possibly slow/networked tree."""
+    java_files = []
+    resource_files = []
+    seen = 0
+    for dirpath, _dirnames, filenames in os.walk(repo_root):
+        for name in filenames:
+            seen += 1
+            if verbose:
+                _progress(f"scanning: {seen} files seen ({len(java_files)} .java, {len(resource_files)} resource)")
+            lower = name.lower()
+            if lower.endswith(".java"):
+                java_files.append(os.path.join(dirpath, name))
+            elif lower.endswith(RESOURCE_EXTENSIONS):
+                resource_files.append(os.path.join(dirpath, name))
+    if verbose:
+        _progress_done()
+    return sorted(java_files), sorted(resource_files)
 
 
 def build_index(repo_root, db_path, verbose=True):
-    java_files = sorted(glob.glob(os.path.join(repo_root, "**", "*.java"), recursive=True))
+    java_files, resource_files = _scan_files(repo_root, verbose)
     if verbose:
         print(f"found {len(java_files)} .java files under {repo_root}")
-
-    resource_files = _find_resource_files(repo_root, exclude=set(java_files))
-    if verbose:
         print(f"found {len(resource_files)} resource file(s) ({', '.join(RESOURCE_EXTENSIONS)}) under {repo_root}")
 
     parsed_files = []
     errors = []
-    for path in java_files:
+    total = len(java_files)
+    for i, path in enumerate(java_files, start=1):
+        if verbose:
+            _progress(f"parsing {i}/{total}: {os.path.basename(path)}")
         pf, err = parse_file(path)
         if err:
             errors.append((path, err))
         else:
             parsed_files.append(pf)
+    if verbose:
+        _progress_done()
     if errors and verbose:
         print(f"skipped {len(errors)} file(s) that failed to parse:")
         for path, err in errors[:20]:
@@ -151,10 +190,15 @@ def build_index(repo_root, db_path, verbose=True):
     # pass 2: call graph + instantiations, now that every method has a row id
     total_calls = 0
     resolved_calls = 0
+    total_methods = len(method_id_by_obj)
+    methods_done = 0
     for pf in parsed_files:
         for t in iter_all_types(pf.types):
             type_id = type_id_by_fqn[t.fqn]
             for m in t.methods:
+                methods_done += 1
+                if verbose:
+                    _progress(f"resolving calls: {methods_done}/{total_methods} methods ({t.name}#{m.name})")
                 caller_id = method_id_by_obj[id(m)]
                 scope = build_scope(t, m, registry)
                 calls, instantiations = resolve_method_body(t, m, registry, scope)
@@ -173,6 +217,8 @@ def build_index(repo_root, db_path, verbose=True):
                         "INSERT INTO type_refs(type_id, method_id, referenced_fqn, kind) VALUES (?, ?, ?, 'instantiation')",
                         (type_id, caller_id, inst["referenced_fqn"]),
                     )
+    if verbose:
+        _progress_done()
 
     # full-text search index: one row per type, one row per method
     for fqn, type_id in type_id_by_fqn.items():
@@ -203,7 +249,9 @@ def build_index(repo_root, db_path, verbose=True):
     # resource files (properties/xml/yaml, ...) aren't Java and aren't parsed,
     # but a text/URL externalized there should still turn up in search
     resource_count = 0
-    for path in resource_files:
+    for i, path in enumerate(resource_files, start=1):
+        if verbose:
+            _progress(f"indexing resources {i}/{len(resource_files)}: {os.path.basename(path)}")
         try:
             with open(path, "r", encoding="utf-8", errors="replace") as fh:
                 content = fh.read()
@@ -216,6 +264,8 @@ def build_index(repo_root, db_path, verbose=True):
             (path, os.path.basename(path), path, file_id, content),
         )
         resource_count += 1
+    if verbose:
+        _progress_done()
 
     conn.commit()
 

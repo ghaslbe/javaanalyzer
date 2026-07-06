@@ -52,6 +52,15 @@ mitindexiert (nicht geparst, nur roher Text) -- damit auch ausgelagerte
 Texte/URLs (Config, Connection-Strings, Log-Formate, ...) über die Suche
 gefunden werden, nicht nur Code.
 
+Bei großen Repos (mehrere 10.000+ Dateien, insbesondere über ein
+Netzlaufwerk) läuft der Build eine Weile. Solange die Ausgabe in einem
+echten Terminal landet, zeigt eine sich selbst überschreibende Zeile den
+Fortschritt (Scannen/Parsen/Call-Graph-Auflösung/Resource-Indexierung) an,
+statt das Terminal mit tausenden Zeilen zuzuspammen. Bei Umleitung in eine
+Datei (`> log.txt`) wird diese Zeile automatisch weggelassen, da `\r` dort
+ohnehin nur Datenmüll erzeugen würde -- die normalen Zusammenfassungszeilen
+(`found ... files`, `indexed ...`) bleiben davon unberührt.
+
 ## Suchen
 
 ```bash
