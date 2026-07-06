@@ -108,11 +108,26 @@ betroffenen Dateien nach `slice.txt`.
 `StartController` kann ein exakter FQN, ein einfacher Klassenname oder ein
 Teilstring sein; bei Mehrdeutigkeit werden Kandidaten aufgelistet.
 
-## Flask-Backend
+## Flask-Backend + Browser-UI
 
 ```bash
 python server.py --db index.sqlite --port 5000
 ```
+
+Dann im Browser `http://127.0.0.1:5000/` öffnen: eine Such-Seite im
+Google-SERP-Stil. Jeder Treffer zeigt Package/Klasse/Methode + Code-Snippet;
+darunter ein aufklappbarer "genutzt von (N)"-Bereich mit den Aufrufern --
+und *deren* Aufrufer lassen sich wieder aufklappen (`<details>`, wird beim
+ersten Öffnen per kleinem JS-Fetch nachgeladen), beliebig tief. Klassennamen
+sind Links auf eine Detailseite (`/type/<fqn>`: Felder, Methoden, Vererbung),
+von der aus man wieder zu einer Methode zurück in die Suche springen kann --
+so kann man sich rein über den Browser durch die Codebasis klicken, ohne
+Dateien manuell zu öffnen.
+
+Kein CDN, kein Build-Schritt, keine JS-Frameworks -- alles inline im
+Flask-Server (`javaindex/webui.py`), läuft komplett offline.
+
+REST-Endpunkte für die Integration in andere Tools:
 
 - `GET /api/search?q=<term>&limit=30`
 - `GET /api/search?q=<term>&code=true&context=5` -- zusätzlich Package/Klasse/Methode + Code-Snippet je Treffer und je Aufrufer (Rückgabe von `search_with_code()`, siehe oben)

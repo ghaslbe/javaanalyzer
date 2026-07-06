@@ -5,6 +5,9 @@ Usage:
     python server.py --db index.sqlite [--port 5000]
 
 Endpoints:
+    GET /                                            -- browsable search UI (HTML)
+    GET /type/<fqn>                                  -- class detail page (HTML)
+    GET /fragment/callers?method=<fqn>#<sig>          -- lazy-loaded caller drill-down (HTML fragment)
     GET /api/search?q=<term>&limit=30
     GET /api/search?q=<term>&code=true&context=5   -- + package/class/method/snippet/callers per hit
     GET /api/slice?seed=<name-or-fqn>&depth=2
@@ -16,11 +19,13 @@ import argparse
 import os
 import sqlite3
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template_string, request
 
+from javaindex.search import _callers_with_location, _occurrence
 from javaindex.search import search as run_search
 from javaindex.search import search_with_code
 from javaindex.slice import build_slice
+from javaindex.webui import CALLERS_FRAGMENT, SEARCH_PAGE, TYPE_PAGE, method_key
 
 app = Flask(__name__)
 app.config["DB_PATH"] = os.environ.get("JAVAINDEX_DB", "index.sqlite")
@@ -34,6 +39,53 @@ def _db_path():
 def health():
     exists = os.path.exists(_db_path())
     return jsonify({"ok": exists, "db": _db_path()})
+
+
+@app.get("/")
+def search_page():
+    q = request.args.get("q", "").strip()
+    limit = request.args.get("limit", 20, type=int)
+    context = request.args.get("context", 3, type=int)
+    results = search_with_code(_db_path(), q, context=context, limit=limit) if q else []
+    return render_template_string(SEARCH_PAGE, q=q, results=results, method_key=method_key)
+
+
+@app.get("/type/<path:fqn>")
+def type_page(fqn):
+    info = _type_detail(fqn)
+    if info is None:
+        return f"<p>Keine Klasse mit FQN '{fqn}' gefunden. <a href='/'>Zur Suche</a></p>", 404
+    return render_template_string(TYPE_PAGE, info=info)
+
+
+@app.get("/fragment/callers")
+def fragment_callers():
+    """Lazy-loaded next level of the call-graph drill-down: who calls the
+    given method. Returns an HTML fragment, not JSON -- meant to be inserted
+    directly into the page by the small JS in webui.SCRIPT."""
+    key = request.args.get("method", "")
+    context = request.args.get("context", 3, type=int)
+    if "#" not in key:
+        return render_template_string(CALLERS_FRAGMENT, callers=[], method_key=method_key)
+
+    owner_fqn, signature = key.split("#", 1)
+    conn = sqlite3.connect(_db_path())
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    row = cur.execute(
+        "SELECT m.id FROM methods m JOIN types t ON t.id = m.type_id WHERE t.fqn=? AND m.signature=? LIMIT 1",
+        (owner_fqn, signature),
+    ).fetchone()
+    if not row:
+        conn.close()
+        return render_template_string(CALLERS_FRAGMENT, callers=[], method_key=method_key)
+
+    callers = [
+        _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
+        for c in _callers_with_location(cur, row["id"])
+    ]
+    conn.close()
+    return render_template_string(CALLERS_FRAGMENT, callers=callers, method_key=method_key)
 
 
 @app.get("/api/search")
@@ -68,17 +120,21 @@ def api_slice():
     return jsonify(result)
 
 
-@app.get("/api/type/<path:fqn>")
-def api_type(fqn):
+def _type_detail(fqn):
+    """Shared by /api/type and the HTML /type page. None if not found.
+
+    Duplicate FQNs (see build.py) mean this can match more than one type --
+    like everywhere else, we just take the first and accept the imprecision.
+    """
     conn = sqlite3.connect(_db_path())
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     trow = cur.execute(
-        "SELECT id, name, fqn, kind, superclass_fqn, start_line FROM types WHERE fqn=?", (fqn,)
+        "SELECT id, name, fqn, kind, superclass_fqn, start_line FROM types WHERE fqn=? LIMIT 1", (fqn,)
     ).fetchone()
     if not trow:
         conn.close()
-        return jsonify({"error": "not found"}), 404
+        return None
 
     path_row = cur.execute(
         "SELECT f.path FROM types t JOIN files f ON f.id = t.file_id WHERE t.id=?", (trow["id"],)
@@ -97,18 +153,24 @@ def api_type(fqn):
         )
     ]
     conn.close()
-    return jsonify(
-        {
-            "fqn": trow["fqn"],
-            "name": trow["name"],
-            "kind": trow["kind"],
-            "path": path_row[0] if path_row else None,
-            "superclass_fqn": trow["superclass_fqn"],
-            "implements": implements,
-            "fields": fields,
-            "methods": methods,
-        }
-    )
+    return {
+        "fqn": trow["fqn"],
+        "name": trow["name"],
+        "kind": trow["kind"],
+        "path": path_row[0] if path_row else None,
+        "superclass_fqn": trow["superclass_fqn"],
+        "implements": implements,
+        "fields": fields,
+        "methods": methods,
+    }
+
+
+@app.get("/api/type/<path:fqn>")
+def api_type(fqn):
+    info = _type_detail(fqn)
+    if info is None:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(info)
 
 
 def main():
