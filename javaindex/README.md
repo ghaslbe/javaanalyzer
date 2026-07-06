@@ -171,3 +171,9 @@ wachsen.
 - `javalang` versteht kein sehr neues Java (records, sealed classes,
   pattern matching, text blocks) -- solche Dateien werden beim Build
   übersprungen und als Fehler ausgegeben, tauchen aber nicht im Index auf.
+- Wird dieselbe Klasse (gleiches Package + Name) in mehreren Dateien deklariert
+  (z.B. Duplikate/generierter Code über mehrere Module hinweg), werden beide
+  vollständig indexiert und sind durchsuchbar -- aber Hierarchie-/Slice-Suche
+  per FQN (`slice.py`, `/api/type/<fqn>`) trifft dann eine von beiden, nicht
+  garantiert die "richtige". `build.py` gibt beim Build eine Warnung mit den
+  betroffenen Dateipfaden aus.

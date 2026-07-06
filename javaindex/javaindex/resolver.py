@@ -13,7 +13,7 @@ import re
 
 import javalang
 
-from .parse import _type_name
+from .parse import _type_name, iter_all_types
 
 # javalang has a quirk where `this.field.method()` loses its qualifier
 # entirely (splits into an unlinked MemberReference + a bare MethodInvocation)
@@ -38,21 +38,28 @@ def _filter_any(root, types):
             yield path, node
 
 
-def resolve_hierarchy(registry):
-    """Set file_path / superclass_fqn / implements_fqns on every parsed type."""
-    for info in registry.all_type_infos():
-        t = info.parsed
-        t.file_path = info.path
-        if t.extends_name:
-            fqn, _ = registry.resolve(t.extends_name, file_path=info.path, current_type_fqn=info.fqn)
-            t.superclass_fqn = fqn
-        else:
-            t.superclass_fqn = None
-        implements_fqns = []
-        for iname in t.implements_names:
-            ifqn, _ = registry.resolve(iname, file_path=info.path, current_type_fqn=info.fqn)
-            implements_fqns.append(ifqn or iname)
-        t.implements_fqns = implements_fqns
+def resolve_hierarchy(registry, parsed_files):
+    """Set superclass_fqn / implements_fqns on every parsed type.
+
+    Iterates parsed_files directly (not registry.all_type_infos()) because
+    two files can declare the same FQN (duplicate/generated classes, common
+    in big multi-module repos) -- the registry only keeps the last one it
+    saw, but every ParsedType still needs these attributes set or later
+    code that walks all parsed types (not just registry winners) crashes.
+    file_path is already set on every ptype by Registry._assign_fqn().
+    """
+    for pf in parsed_files:
+        for t in iter_all_types(pf.types):
+            if t.extends_name:
+                fqn, _ = registry.resolve(t.extends_name, file_path=t.file_path, current_type_fqn=t.fqn)
+                t.superclass_fqn = fqn
+            else:
+                t.superclass_fqn = None
+            implements_fqns = []
+            for iname in t.implements_names:
+                ifqn, _ = registry.resolve(iname, file_path=t.file_path, current_type_fqn=t.fqn)
+                implements_fqns.append(ifqn or iname)
+            t.implements_fqns = implements_fqns
 
 
 def _chained_away_ids(root):

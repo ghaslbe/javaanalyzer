@@ -40,13 +40,19 @@ class FileInfo:
 
 class Registry:
     def __init__(self):
-        self.by_fqn = {}  # fqn -> TypeInfo
+        self.by_fqn = {}  # fqn -> TypeInfo -- last one wins on a duplicate FQN
         self.by_simple = {}  # simple_name -> [fqn, ...]
         self.files = {}  # path -> FileInfo
+        self.duplicate_fqns = []  # (fqn, first_path, duplicate_path) -- same FQN declared more than once
 
     def _assign_fqn(self, ptype, package, path, outer_fqn=None):
         fqn = f"{outer_fqn}.{ptype.name}" if outer_fqn else (f"{package}.{ptype.name}" if package else ptype.name)
         ptype.fqn = fqn
+        ptype.file_path = path  # set unconditionally -- resolve_hierarchy() also sets this for the
+        # by_fqn "winner", but every type (incl. FQN duplicates that lose the by_fqn slot) needs it
+        existing = self.by_fqn.get(fqn)
+        if existing is not None:
+            self.duplicate_fqns.append((fqn, existing.path, path))
         info = TypeInfo(fqn=fqn, simple_name=ptype.name, kind=ptype.kind, package=package, path=path, outer_fqn=outer_fqn, parsed=ptype)
         self.by_fqn[fqn] = info
         self.by_simple.setdefault(ptype.name, []).append(fqn)

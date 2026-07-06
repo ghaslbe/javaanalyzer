@@ -18,7 +18,8 @@ CREATE TABLE types (
     id INTEGER PRIMARY KEY,
     file_id INTEGER NOT NULL REFERENCES files(id),
     name TEXT NOT NULL,
-    fqn TEXT UNIQUE NOT NULL,
+    fqn TEXT NOT NULL,                -- not unique: the same FQN can legitimately be
+                                       -- declared in more than one file in a large repo
     kind TEXT NOT NULL,              -- class | interface | enum
     outer_type_id INTEGER REFERENCES types(id),
     superclass_name TEXT,            -- as written in source (simple/qualified)

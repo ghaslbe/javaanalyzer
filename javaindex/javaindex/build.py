@@ -97,7 +97,15 @@ def build_index(repo_root, db_path, verbose=True):
             print(f"  {path}: {err.splitlines()[0] if err else err}")
 
     registry = build_registry(parsed_files)
-    resolve_hierarchy(registry)
+    resolve_hierarchy(registry, parsed_files)
+    if registry.duplicate_fqns and verbose:
+        print(
+            f"note: {len(registry.duplicate_fqns)} class(es) declared more than once "
+            "(same package+name in different files) -- all are indexed and searchable, "
+            "but name-based resolution only knows the last one seen, e.g.:"
+        )
+        for fqn, first_path, dup_path in registry.duplicate_fqns[:5]:
+            print(f"  {fqn}\n    {first_path}\n    {dup_path}")
 
     conn = init_db(db_path)
     cur = conn.cursor()
@@ -107,14 +115,17 @@ def build_index(repo_root, db_path, verbose=True):
         cur.execute("INSERT INTO files(path, package) VALUES (?, ?)", (pf.path, pf.package))
         file_id_by_path[pf.path] = cur.lastrowid
 
-    type_id_by_fqn = {}
+    # keyed by id(t) (Python object identity), not t.fqn -- the same FQN can
+    # legitimately be declared in more than one file (see duplicate_fqns
+    # above), so fqn is not a safe key for "this exact type's row id"
+    type_id_by_obj = {}
     method_id_by_obj = {}
 
     # pass 1: types, fields, methods, method_params, type_implements
     for pf in parsed_files:
         file_id = file_id_by_path[pf.path]
         for t in iter_all_types(pf.types):
-            outer_id = type_id_by_fqn.get(t.outer.fqn) if t.outer else None
+            outer_id = type_id_by_obj.get(id(t.outer)) if t.outer else None
             cur.execute(
                 """INSERT INTO types
                    (file_id, name, fqn, kind, outer_type_id, superclass_name, superclass_fqn, modifiers, start_line)
@@ -131,14 +142,14 @@ def build_index(repo_root, db_path, verbose=True):
                     t.start_line,
                 ),
             )
-            type_id_by_fqn[t.fqn] = cur.lastrowid
+            type_id_by_obj[id(t)] = cur.lastrowid
 
     # second sub-pass once every type has a row (outer_type_id above only works because
     # iter_all_types visits outers before nested -- implements/fields/methods need the
-    # full type_id_by_fqn map so they can be done right after, per type)
+    # full type_id_by_obj map so they can be done right after, per type)
     for pf in parsed_files:
         for t in iter_all_types(pf.types):
-            type_id = type_id_by_fqn[t.fqn]
+            type_id = type_id_by_obj[id(t)]
 
             for iname, ifqn in zip(t.implements_names, t.implements_fqns):
                 cur.execute(
@@ -194,7 +205,7 @@ def build_index(repo_root, db_path, verbose=True):
     methods_done = 0
     for pf in parsed_files:
         for t in iter_all_types(pf.types):
-            type_id = type_id_by_fqn[t.fqn]
+            type_id = type_id_by_obj[id(t)]
             for m in t.methods:
                 methods_done += 1
                 if verbose:
@@ -220,16 +231,19 @@ def build_index(repo_root, db_path, verbose=True):
     if verbose:
         _progress_done()
 
-    # full-text search index: one row per type, one row per method
-    for fqn, type_id in type_id_by_fqn.items():
-        info = registry.by_fqn[fqn]
-        cur.execute(
-            "INSERT INTO search(fqn, name, kind, path, ref_id, ref_kind) VALUES (?, ?, ?, ?, ?, 'type')",
-            (fqn, info.simple_name, info.kind, info.path, type_id),
-        )
+    # full-text search index: one row per type, one row per method. Every
+    # declared type gets a search row (even FQN duplicates), not just the
+    # one registry.by_fqn happens to keep as the resolution target.
     for pf in parsed_files:
         for t in iter_all_types(pf.types):
-            type_id = type_id_by_fqn[t.fqn]
+            type_id = type_id_by_obj[id(t)]
+            cur.execute(
+                "INSERT INTO search(fqn, name, kind, path, ref_id, ref_kind) VALUES (?, ?, ?, ?, ?, 'type')",
+                (t.fqn, t.name, t.kind, t.file_path, type_id),
+            )
+    for pf in parsed_files:
+        for t in iter_all_types(pf.types):
+            type_id = type_id_by_obj[id(t)]
             for m in t.methods:
                 method_id = method_id_by_obj[id(m)]
                 cur.execute(
@@ -270,7 +284,7 @@ def build_index(repo_root, db_path, verbose=True):
     conn.commit()
 
     if verbose:
-        print(f"indexed {len(type_id_by_fqn)} types, {len(method_id_by_obj)} methods, {resource_count} resource file(s)")
+        print(f"indexed {len(type_id_by_obj)} types, {len(method_id_by_obj)} methods, {resource_count} resource file(s)")
         print(f"calls: {total_calls} total, {resolved_calls} resolved within the repo ({total_calls - resolved_calls} external/unresolved)")
     conn.close()
 
