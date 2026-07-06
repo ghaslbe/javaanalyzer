@@ -85,8 +85,8 @@ def build_index(repo_root, db_path, verbose=True):
         if verbose:
             _progress(f"parsing {i}/{total}: {os.path.basename(path)}")
         pf, err = parse_file(path)
-        if err:
-            errors.append((path, err))
+        if pf is None:
+            errors.append((path, err or "unknown error"))
         else:
             parsed_files.append(pf)
     if verbose:

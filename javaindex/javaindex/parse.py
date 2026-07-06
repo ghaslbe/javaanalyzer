@@ -95,14 +95,26 @@ def _collect_body(body, outer=None):
             )
         elif isinstance(
             member,
-            (javalang.tree.ClassDeclaration, javalang.tree.InterfaceDeclaration, javalang.tree.EnumDeclaration),
+            (
+                javalang.tree.ClassDeclaration,
+                javalang.tree.InterfaceDeclaration,
+                javalang.tree.EnumDeclaration,
+                javalang.tree.AnnotationDeclaration,
+            ),
         ):
             nested_out.append(_parse_type_decl(member, outer=outer))
     return fields_out, methods_out, nested_out
 
 
 def _parse_type_decl(node, outer=None):
-    if isinstance(node, javalang.tree.InterfaceDeclaration):
+    if isinstance(node, javalang.tree.AnnotationDeclaration):
+        # @interface Foo -- no extends/implements, and its body is
+        # AnnotationMethod nodes we don't otherwise handle; still register
+        # the type itself so it doesn't blow up as an unhandled "class"
+        kind = "annotation"
+        extends_name = None
+        implements_names = []
+    elif isinstance(node, javalang.tree.InterfaceDeclaration):
         kind = "interface"
         extends_name = None
         implements_names = [_type_name(t) for t in (node.extends or [])]
