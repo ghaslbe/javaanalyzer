@@ -46,6 +46,61 @@ def _enclosing_method(cur, file_id, line):
     ).fetchone()
 
 
+def _callers_with_location(cur, method_id, limit=20):
+    """Like _callers_of, but keeps the call site (file/line) so we can show
+    a code snippet of the calling code too."""
+    rows = cur.execute(
+        """SELECT DISTINCT t.fqn, m.signature, c.line, f.path
+           FROM calls c
+           JOIN methods m ON m.id = c.caller_method_id
+           JOIN types t ON t.id = m.type_id
+           JOIN files f ON f.id = t.file_id
+           WHERE c.callee_method_id = ?
+           LIMIT ?""",
+        (method_id, limit),
+    ).fetchall()
+    return [{"fqn": fqn, "signature": sig, "path": path, "line": line} for fqn, sig, line, path in rows]
+
+
+def _package_of(cur, path):
+    row = cur.execute("SELECT package FROM files WHERE path=?", (path,)).fetchone()
+    return row[0] if row else None
+
+
+def _read_lines(path):
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            return fh.readlines()
+    except OSError:
+        return []
+
+
+def _snippet(path, line, context=5):
+    """+/- `context` lines of raw source around `line` (1-indexed)."""
+    if not line:
+        return []
+    lines = _read_lines(path)
+    if not lines:
+        return []
+    start = max(1, line - context)
+    end = min(len(lines), line + context)
+    return [{"line": n, "text": lines[n - 1].rstrip("\n")} for n in range(start, end + 1)]
+
+
+def _occurrence(cur, path, class_fqn, method_signature, line, context):
+    """Package + class + method + a code snippet around one line -- the
+    unit the user actually wants to read to understand 'how does this hang
+    together'."""
+    return {
+        "package": _package_of(cur, path),
+        "class": class_fqn,
+        "method": method_signature,
+        "path": path,
+        "line": line,
+        "code": _snippet(path, line, context),
+    }
+
+
 def _matching_lines(path, tokens, limit=15):
     tokens_lower = [t.lower() for t in tokens]
     try:
@@ -121,12 +176,98 @@ def search(db_path, term, limit=30):
     return results
 
 
+def search_with_code(db_path, term, context=5, limit=30):
+    """Like search(), but for every hit (and every caller of the enclosing
+    method) returns package/class/method plus a +/- `context` line code
+    snippet -- enough to see how pieces hang together without opening the
+    files by hand."""
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    match = _match_query(term)
+    if not match:
+        conn.close()
+        return []
+
+    rows = cur.execute(
+        """SELECT fqn, name, kind, path, ref_id, ref_kind, rank
+           FROM search WHERE search MATCH ? ORDER BY rank LIMIT ?""",
+        (match, limit),
+    ).fetchall()
+
+    results = []
+    for row in rows:
+        if row["ref_kind"] == "type":
+            trow = cur.execute("SELECT start_line FROM types WHERE id=?", (row["ref_id"],)).fetchone()
+            line = trow[0] if trow else None
+            occurrence = _occurrence(cur, row["path"], row["fqn"], None, line, context)
+            results.append({"kind": "type", "occurrence": occurrence, "used_by": []})
+
+        elif row["ref_kind"] == "method":
+            signature, line, owner_fqn = cur.execute(
+                "SELECT m.signature, m.start_line, t.fqn FROM methods m JOIN types t ON t.id = m.type_id WHERE m.id=?",
+                (row["ref_id"],),
+            ).fetchone()
+            occurrence = _occurrence(cur, row["path"], owner_fqn, signature, line, context)
+            used_by = [
+                _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
+                for c in _callers_with_location(cur, row["ref_id"])
+            ]
+            results.append({"kind": "method", "occurrence": occurrence, "used_by": used_by})
+
+        else:  # file: a raw-text hit -- find the enclosing method (if any) per matching line
+            for hit in _matching_lines(row["path"], _tokens(term)):
+                enclosing = _enclosing_method(cur, row["ref_id"], hit["line"])
+                if enclosing:
+                    method_id, owner_fqn, signature = enclosing
+                    occurrence = _occurrence(cur, row["path"], owner_fqn, signature, hit["line"], context)
+                    used_by = [
+                        _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
+                        for c in _callers_with_location(cur, method_id)
+                    ]
+                else:
+                    occurrence = _occurrence(cur, row["path"], None, None, hit["line"], context)
+                    used_by = []
+                results.append({"kind": "text", "occurrence": occurrence, "used_by": used_by})
+
+    conn.close()
+    return results
+
+
+def _format_occurrence(occ, indent=""):
+    lines = []
+    where = f"{occ['class']}#{occ['method']}" if occ["method"] else (occ["class"] or "?")
+    lines.append(f"{indent}{where}")
+    lines.append(f"{indent}Package: {occ['package']}")
+    lines.append(f"{indent}Datei:   {occ['path']}:{occ['line']}")
+    for row in occ["code"]:
+        marker = ">" if row["line"] == occ["line"] else " "
+        lines.append(f"{indent}  {marker} {row['line']:>5}  {row['text']}")
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("db", help="Path to the SQLite index")
     parser.add_argument("term", help="Search term (class/method name, prefix-matched)")
     parser.add_argument("--limit", type=int, default=30)
+    parser.add_argument(
+        "--code", action="store_true", help="Show package/class/method + code snippets (+/- --context lines)"
+    )
+    parser.add_argument("--context", type=int, default=5, help="Lines of context around each hit (default: 5)")
     args = parser.parse_args()
+
+    if args.code:
+        for result in search_with_code(args.db, args.term, context=args.context, limit=args.limit):
+            print(f"=== [{result['kind']}] ===")
+            print(_format_occurrence(result["occurrence"]))
+            if result["used_by"]:
+                print(f"\n--- genutzt von {len(result['used_by'])} Aufrufer(n) ---")
+                for caller in result["used_by"]:
+                    print()
+                    print(_format_occurrence(caller, indent="  "))
+            print()
+        return
 
     for item in search(args.db, args.term, args.limit):
         if item["kind"] == "type":

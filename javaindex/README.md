@@ -68,6 +68,18 @@ passende Zeile liegt (per nächstgelegener `start_line` geschätzt, da keine
 exakten Methodenenden getrackt werden -- funktioniert bei normal
 formatiertem Code zuverlässig).
 
+### Mit Code-Kontext
+
+```bash
+python -m javaindex.search index.sqlite "utm" --code --context 5
+```
+
+Zeigt zu jedem Treffer Package, Klasse, Methode und den Quellcode +/-
+`--context` Zeilen davor/dahinter -- und darunter, für jede Klasse/Methode,
+die die betroffene Methode aufruft, denselben Ausschnitt an deren Aufrufstelle.
+Damit lässt sich allein aus der Suchausgabe nachvollziehen, wie eine Fundstelle
+mit anderen Klassen zusammenhängt, ohne die Dateien einzeln zu öffnen.
+
 ## Slice fürs LLM
 
 ```bash
