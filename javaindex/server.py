@@ -6,6 +6,7 @@ Usage:
 
 Endpoints:
     GET /api/search?q=<term>&limit=30
+    GET /api/search?q=<term>&code=true&context=5   -- + package/class/method/snippet/callers per hit
     GET /api/slice?seed=<name-or-fqn>&depth=2
     GET /api/type/<fqn>
     GET /health
@@ -18,6 +19,7 @@ import sqlite3
 from flask import Flask, jsonify, request
 
 from javaindex.search import search as run_search
+from javaindex.search import search_with_code
 from javaindex.slice import build_slice
 
 app = Flask(__name__)
@@ -40,6 +42,16 @@ def api_search():
     limit = request.args.get("limit", 30, type=int)
     if not term.strip():
         return jsonify({"error": "missing ?q="}), 400
+
+    if request.args.get("code", "").lower() in ("1", "true", "yes"):
+        # richer shape for handing to an LLM tool-call: package/class/method
+        # + a code snippet per hit, plus the same for every caller of the
+        # enclosing method -- enough context for a first-pass explanation
+        # without having to fetch/open the files separately.
+        context = request.args.get("context", 5, type=int)
+        results = search_with_code(_db_path(), term, context=context, limit=limit)
+        return jsonify({"query": term, "results": results})
+
     results = run_search(_db_path(), term, limit=limit)
     return jsonify({"query": term, "results": results})
 

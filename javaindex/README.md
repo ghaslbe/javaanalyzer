@@ -106,12 +106,52 @@ python server.py --db index.sqlite --port 5000
 ```
 
 - `GET /api/search?q=<term>&limit=30`
+- `GET /api/search?q=<term>&code=true&context=5` -- zusätzlich Package/Klasse/Methode + Code-Snippet je Treffer und je Aufrufer (Rückgabe von `search_with_code()`, siehe oben)
 - `GET /api/slice?seed=<name-oder-fqn>&depth=2`
 - `GET /api/type/<fqn>` -- Felder/Methoden/Hierarchie einer einzelnen Klasse
 - `GET /health`
 
 Damit lässt sich die Suche in andere Tools (Editor-Plugin, Chat-UI, lokales
 LLM als Tool-Call) einbinden, ohne die SQLite-Datei direkt anzufassen.
+
+### Als Tool für ein lokales LLM (z.B. Gemma über Ollama)
+
+Der Sinn von `code=true`: ein kleines lokales Modell muss die Dateien nicht
+selbst öffnen/durchsuchen -- ein Tool-Call auf `/api/search?q=...&code=true`
+liefert direkt alles, was für eine kurze Ersteinschätzung nötig ist (wo
+steht es, was macht die Zeile, wer ruft die Methode noch auf). Das Modell
+muss dann nur noch zusammenfassen, nicht mehr selbst im Repo suchen.
+
+Beispiel-Tool-Definition (Ollama/OpenAI-kompatibles Function-Calling):
+
+```json
+{
+  "name": "search_java_code",
+  "description": "Durchsucht den indexierten Java-Code nach einem Begriff (Klassen-/Methodennamen, aber auch Text in Properties/XML/Kommentaren) und liefert Fundstellen inkl. Code-Kontext und Aufrufern.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {"type": "string", "description": "Suchbegriff, z.B. ein Klassenname oder fachlicher Begriff"}
+    },
+    "required": ["query"]
+  }
+}
+```
+
+Die Tool-Implementierung ruft dann `GET /api/search?q=<query>&code=true&context=5`
+auf und gibt das JSON ans Modell zurück. Ein sinnvoller System-Prompt für den
+Einstieg:
+
+> Du bekommst Suchtreffer aus einer Java-Codebasis (Package, Klasse, Methode,
+> Code-Ausschnitt, sowie wer die Methode aufruft). Fasse in wenigen Sätzen
+> zusammen: wo der Begriff vorkommt, was der Code an der Stelle tut, und was
+> eine Änderung dort vermutlich beeinflussen würde (basierend auf den
+> Aufrufern). Wenn nichts gefunden wurde, sag das klar.
+
+Für sehr kleine Modelle (4B-Klasse) `context` niedrig halten (2-3) und
+`limit` klein (5-10), damit der Prompt nicht zu groß wird -- die Callers
+werden pro Treffer mitgeliefert und können bei vielen Aufrufern schnell
+wachsen.
 
 ## Bekannte Grenzen
 
