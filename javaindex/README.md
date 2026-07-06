@@ -51,9 +51,22 @@ erneut laufen lassen, um den Index auf den aktuellen Stand zu bringen.
 
 ```bash
 python -m javaindex.search index.sqlite "FunnelDynamic"
+python -m javaindex.search index.sqlite "utm"
 ```
 
-Findet Klassen und Methoden per Präfix-Volltextsuche (FTS5) über Name/FQN.
+Findet Klassen und Methoden per Präfix-Volltextsuche (FTS5) über Name/FQN --
+und zusätzlich per Volltext über den kompletten Dateiinhalt, damit auch
+Treffer in lokalen Variablen, String-Literalen oder Kommentaren gefunden
+werden (fachliche Begriffe wie `utm` tauchen oft nur dort auf, nicht als
+Klassen-/Methodenname). Ein solcher Datei-Treffer zeigt den Dateipfad, die
+darin enthaltenen Klassen (FQN) und die passenden Zeilen mit Zeilennummer.
+
+Jeder Treffer zeigt zusätzlich, wer die betroffene Methode aufruft
+(`genutzt von: ...`, aus dem Call-Graph): bei einem direkten Methodentreffer
+für diese Methode, bei einem Text-Treffer für die Methode, in der die
+passende Zeile liegt (per nächstgelegener `start_line` geschätzt, da keine
+exakten Methodenenden getrackt werden -- funktioniert bei normal
+formatiertem Code zuverlässig).
 
 ## Slice fürs LLM
 

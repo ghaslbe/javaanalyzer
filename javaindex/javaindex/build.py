@@ -176,6 +176,15 @@ def build_index(repo_root, db_path, verbose=True):
                     (f"{t.fqn}#{_method_signature(m)}", m.name, t.file_path, method_id),
                 )
 
+    # also index full file content -- catches local var names, string
+    # literals, comments, anything class/method names alone would miss
+    for pf in parsed_files:
+        file_id = file_id_by_path[pf.path]
+        cur.execute(
+            "INSERT INTO search(fqn, name, kind, path, ref_id, ref_kind, content) VALUES (?, ?, 'file', ?, ?, 'file', ?)",
+            (pf.path, os.path.basename(pf.path), pf.path, file_id, "\n".join(pf.source_lines)),
+        )
+
     conn.commit()
 
     if verbose:

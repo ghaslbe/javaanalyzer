@@ -87,7 +87,7 @@ CREATE INDEX idx_type_refs_type ON type_refs(type_id);
 CREATE INDEX idx_type_refs_target ON type_refs(referenced_fqn);
 
 CREATE VIRTUAL TABLE search USING fts5(
-    fqn, name, kind, path UNINDEXED, ref_id UNINDEXED, ref_kind UNINDEXED
+    fqn, name, kind, path UNINDEXED, ref_id UNINDEXED, ref_kind UNINDEXED, content
 );
 """
 
