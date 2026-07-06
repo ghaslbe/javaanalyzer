@@ -1,0 +1,134 @@
+<style>
+	.cubearound {
+		width: 420px;
+		margin-top: 10px;
+	}
+	body {
+		background-color: #fff;
+	}
+	.cube {
+		width: 180px;
+		height: 180px;
+		border: 1px solid #ccc;
+		padding: 5px;
+		margin: 5px;
+		background-color: #00cfff;
+		position: relative;
+		float: left;
+		background-image: url('https://www.interdomizil.de/reisemagazin/wp-content/uploads/seebr%C3%BCcke-sellin-770x515.jpg');
+		cursor: pointer;
+		border-radius: 10px;
+	}
+	.cubebtn {
+		width: 100%;
+		height: 50px;
+		background-color: #9fedff;
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		padding: 10px;
+		border-radius: 0 0 10px 10px;
+		font-size: 0.9em;
+	}
+	.myh1 {}
+</style>
+
+<script>
+
+$(document).ready(function () {
+    $("#formarea").hide();
+    console.log("hide form");
+});
+
+function startquestion() {
+    $("#helloarea").hide();
+    $("#qarea1").show();
+    dosendtrack("start", "questions");
+    dofunnelstep("step-intro","done");
+}
+
+function doCube1(name) {
+    $("#qarea1").hide();
+    $("#qarea2").show();
+    console.log(name);
+    dosendtrack("cubeclick-1", name);
+    dofunnelstep("step-q1","done");
+}
+function doCube2(name) {
+    $("#qarea2").hide();
+    $("#qarea3").show();
+    console.log(name);
+    dosendtrack("cubeclick-2", name);
+    dofunnelstep("step-q2","done");
+}
+function doCube3(name) {
+    $("#qarea3").hide();
+    $("#formarea").show();
+    console.log("show form");
+    console.log(name);
+    dosendtrack("cubeclick-3", name);
+    dofunnelstep("step-q3","done");
+}
+</script>
+
+<div id="qarea1" style="display:none">
+	<h1 style="font-size: 2.6em;font-weight: bold;padding-top: 33px;line-height: initial;">Was ist ihnen am Urlaub am Wichtigsten?<h1>
+			<div class="cubearound" id="cubearound">
+				<div class="cube" style="background:url(/images/sonne.png);background-size: cover;" onclick="doCube1('c1-Sonne');">
+					<div class="cubebtn">Sonne</div>
+				</div>
+				<div class="cube" style="background:url(/images/IMG_5955.JPG);background-size: cover;" onclick="doCube1('c2-Strand');">
+					<div class="cubebtn">Strand</div>
+				</div>
+				<div class="cube" style="background:url(/images/fahrradstrand.png);background-size: cover;" onclick="doCube1('c3-Radfahren');">
+					<div class="cubebtn">Radfahren</div>
+				</div>
+				<div class="cube" onclick="doCube1('c4-other');">
+					<div class="cubebtn">Was anderes</div>
+				</div>
+				<div style="clear:both;"></div>
+				<div>Bitte wählen Sie aus</div>
+			</div>
+		</div>
+
+
+		<div id="qarea2" style="display: none;">
+			<h1 style="font-size: 2.6em;font-weight: bold;padding-top: 33px;line-height: initial;">Was ist ihnen an der Unterkunft am Wichtigsten?<h1>
+					<div class="cubearound" id="cubearound">
+						<div class="cube" style="background:url(/images/IMG_5727.JPG);background-size: cover;" onclick="doCube2('c1-Ebenerdig');">
+							<div class="cubebtn">Ebenerdig</div>
+						</div>
+						<div class="cube" style="background:url(/images/IMG_5355.JPG);background-size: cover;" onclick="doCube2('c2-Terrasse');">
+							<div class="cubebtn">Terrasse</div>
+						</div>
+						<div class="cube" style="background:url(/images/tiefgarage.png);background-size: cover;" onclick="doCube2('c3-Tiefgarage');">
+							<div class="cubebtn">Tiefgarage</div>
+						</div>
+						<div class="cube" onclick="doCube2('c4-other');">
+							<div class="cubebtn">Was anderes</div>
+						</div>
+						<div style="clear:both;"></div>
+						<div>Bitte wählen Sie aus</div>
+					</div>
+				</div>
+
+
+				<div id="qarea3" style="display: none;">
+					<h1 style="font-size: 2.6em;font-weight: bold;padding-top: 33px;line-height: initial;">Wo soll sie liegen? Nahe an:<h1>
+							<div class="cubearound" id="cubearound">
+								<div class="cube" style="background:url(/images/IMG_5677.JPG);background-size: cover;" onclick="doCube3('c1-Strandnah');">
+									<div class="cubebtn">Strand</div>
+								</div>
+								<div class="cube" style="background:url(/images/IMG_5375.JPG);background-size: cover;" onclick="doCube3('c2-Ausgehmöglichkeiten');">
+									<div class="cubebtn">Ausgehmöglichkeit</div>
+								</div>
+								<div class="cube" style="background:url(/images/IMG_5919.JPG);background-size: cover;" onclick="doCube3('c3-Sehenswürdigkeiten');">
+									<div class="cubebtn">Sehenswürdigkeit</div>
+								</div>
+								<div class="cube" onclick="doCube3('c4-other');">
+									<div class="cubebtn">Was anderes</div>
+								</div>
+								<div style="clear:both;"></div>
+								<div>Bitte wählen Sie aus</div>
+							</div>
+						</div>

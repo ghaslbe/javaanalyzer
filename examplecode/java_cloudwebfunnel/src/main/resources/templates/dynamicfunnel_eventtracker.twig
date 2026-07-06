@@ -1,0 +1,103 @@
+
+
+    <script type="text/javascript">
+    
+    
+
+
+    function dofunnelstep(inkey, invalue) {
+            var data = {
+                funnelid: "{{jsondata.funnelid}}",
+                cid: "{{cid}}",
+                mode: "funnelstep",
+                key: inkey,
+                value: invalue
+            };
+            var errorcnt = 0;
+
+            $.ajax({
+                url: '/cloudwebfunnel/ajaxsave?mode=funnelstep',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    //alert("get session failed " + errorThrown);
+                },
+                data: JSON.stringify(data)
+            });
+        }
+        //-----------------------------------------
+
+        function dosendtrack(inkey, invalue) {
+            var data = {
+                cid: "{{cid}}",
+                mode: "track",
+                key: inkey,
+                value: invalue
+            };
+            var errorcnt = 0;
+
+            $.ajax({
+                url: '/cloudwebfunnel/ajaxsave?mode=track',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    //alert("get session failed " + errorThrown);
+                },
+                data: JSON.stringify(data)
+            });
+        }
+
+        //-----------------------------------------
+
+    $(document).ready(function () {
+
+        dofunnelstep("STEP-START", "done")
+
+        setTimeout(function() {
+            dosendtrack("ontime", "2s")
+        }, 2000);
+
+        setTimeout(function() {
+            dosendtrack("ontime", "15s")
+        }, 14000);
+
+        setTimeout(function() {
+            dosendtrack("ontime", "30s")
+        }, 30000);
+
+	try {
+        	document.getElementById("form_email").addEventListener("blur", function() {
+	            dosendtrack("leaveform", "email")
+        	});
+	} catch(err) {
+		  console.log("form_email not found");
+	}
+
+/*
+	try {
+        	document.getElementById("submitbutton").addEventListener("blur", function() {
+	            dosendtrack("form", "submit")
+        	});
+	} catch(err) {
+		  console.log("submitbutton not found");
+	}
+*/
+
+        });
+    </script>
+
+

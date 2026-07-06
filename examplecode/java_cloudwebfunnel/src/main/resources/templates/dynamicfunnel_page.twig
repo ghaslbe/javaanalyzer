@@ -1,0 +1,3 @@
+{% for ekey, evalue in elements %} 
+{% include 'dynamicfunnel_'~evalue.elementtype~'.twig' with {'elementdatax': evalue.elementdata} %} 
+{% endfor %}

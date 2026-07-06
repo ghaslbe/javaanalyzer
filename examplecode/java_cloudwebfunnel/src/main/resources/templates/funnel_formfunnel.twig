@@ -1,0 +1,396 @@
+<link href="/cloudexternal/css/pflege/main.album.css?v=1.5" rel="stylesheet">
+<script type="text/javascript" src="/cloudexternal/3rd/jquery/jquery-3.3.1.min.js"></script>
+
+<div id="grid-cont">
+    <section class="grid_outer chapter">
+
+
+        <div class="article-content">
+            <div>
+
+                <div id="helloarea">
+
+                    <h1 class="chapter-title" style="  color: #000000;
+  font-size: 2.6em;
+  font-weight: bold;
+  line-height: 1.2;
+  margin-top: 10px;
+  background-color: #fffed0;
+  margin-bottom: 20px;
+    ">{{codelist[0].headline}}</h1>
+
+                    <button tabindex="0" class="area10123 area1097 area10108 area10109 area10111 area10112 area10122 area105" onclick="startquestion();return false;" style="background-color: #4CAF50;
+                    border: none;    color: #fff;    padding: 15px 32px;    text-align: center;    text-decoration: none;
+                    display: inline-block;    font-size: 16px;    border: none;    -webkit-appearance: none;min-width:230px;cursor:pointer;
+                    margin-bottom: 20px;"
+                    >Hier kostenlos holen!</button>
+
+                    <div style="line-height: 1.3em; font-size: 1.2em;">
+                        {{codelist[0].text}}<br>
+                    </div>
+                    <br>
+
+
+                    <button tabindex="0" class="area10123 area1097 area10108 area10109 area10111 area10112 area10122 area105" onclick="startquestion();return false;" style="background-color: #4CAF50;
+                    border: none;    color: #fff;    padding: 15px 32px;    text-align: center;    text-decoration: none;
+                    display: inline-block;    font-size: 16px;    border: none;    -webkit-appearance: none;min-width:230px;cursor:pointer;"
+                    >Jetzt kostenlos holen!</button>
+
+                </div>
+
+
+                {% if codelist[0].fnlTemplatetype == "Questionair" %} {% include 'funnel_formfunnelquestionair.twig' %}
+                <br> {% endif %}
+
+
+                <div id="formarea" style="xdisplay: none;">
+
+                    <h1 style="font-size: 2.6em;font-weight: bold;padding-top: 4px;line-height: initial;">Tolle Auswahl!</h1>
+                    <h2 style="font-size: 2em;font-weight: bold;line-height: initial;background-color: #fffed0;">Wohin dürfen unsere Tipps: 'Das Beste von R&uuml;gen' senden?</h2>
+
+
+
+
+                    <form id="loginform2id">
+
+                        <div><label id="formlabel_email" class="labelf">Email</label></div>
+
+                        <div style="font-size:1.3em">Ihre Emailadresse:<div><br>
+
+                        <input type="email" name="email" id="form_email" style="border: 1px solid #797979;
+    min-width: 200px;
+    width:320px
+    min-height: 20px;
+    line-height: 1em;
+    font-size: 1.2em;
+    padding: 3px;
+    margin-bottom: 10px;">
+                        <style>
+                            .noninitial-chapter {
+                                padding-top: 0px;
+                            }
+                            
+                            #grid-cont .chapter {
+                                padding-top: 0px;
+                            }
+                            
+                            .labelf {
+                                font-size: 11px;
+                                margin-top: -20px;
+                                color: #2f61c3;
+                            }
+                        </style>
+
+                        <div style="line-height: 1.3em; font-size: 1.2em;">
+                            <!--
+                            <div><label id="formlabel_dataprotection" class="labelf">Datenschutz</label></div>
+                            <input type="checkbox" name="dataprotection" id="form_cb_dataprotection" style="-webkit-transform: scale(2,2);margin: 10px;/*width: 30px;height: 30px;background: white;border-radius: 5px;border: 2px solid #555;*/" onclick="dosendtrack('click','datap');"
+                                ;>Datenschutz gelesen und einverstanden<br> {% if (codelist[0].fnlWewe == '1') %}
+                            -->
+                            <div><label id="formlabel_wewe" class="labelf">Werbeerlaubnis</label>
+                                <div style="font-size: 0.7em;/*! line-height: 0.6em; */">
+                                    <input type="checkbox" name="wewe" id="form_cb_wewe" style="-webkit-transform: scale(2,2);margin: 10px;/*width: 30px;height: 30px;background: white;border-radius: 5px;border: 2px solid #555;*/" onclick="dosendtrack('click','wewe');" ;>Ich
+                                    best&auml;tige, dass ich Angebote, Neuigkeiten und Tipps per Email erhalten m&ouml;chte. Ich kann diese jederzeit deaktivieren. Datenschutz habe ich gelesen.<br> {% endif %}
+
+                                    <input type="hidden" name="funnelid" value="{{inputid}}">
+                                    <input type="hidden" name="utma" value="{{inpututma}}">
+                                    <input type="hidden" name="mode" value="storedata">
+
+                                    <!--
+                <input type="hidden" name="doi" value="{{codelist[0].fnlDoi }}">
+                <input type="hidden" name="followfunnelid" value="{{codelist[0].fnlFollowfunnelId }}">
+                <input type="hidden" name="fnlEmail4seriesId" value="{{codelist[0].fnlEmail4seriesId }}">
+                <input type="hidden" name="fnlEmail4pdfId" value="{{codelist[0].fnlEmail4pdfId }}">
+-->
+
+                                    <input type="hidden" name="cid" value="{{cid}}">
+                                </div>
+
+                                <br>
+
+
+                                <button tabindex="0" class="area10123 area1097 area10108 area10109 area10111 area10112 area10122 area105" onclick="dosend3();return false;" style="background-color: #4CAF50;
+    border: none;
+    color: #fff;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border: none;
+    -webkit-appearance: none;min-width:230px;cursor:pointer;">
+					<span class="area1098">Jetzt R&uuml;genf&uuml;hrer zusenden</span><span class="area10126"></span>
+				</button>
+
+                    </form>
+
+
+
+
+
+                    <br><br><small style="font-size: 0.5em;line-height: 0.4em;">
+                Sie gehen keinerlei Verpflichtungen ein. Sie erhalten von uns ein PDF mit Tipps zu R&uuml;gen und später evtl. ein unverbindliches Angebot.<br>
+           </small>
+
+
+
+                    </div>
+                    <!-- end of form div -->
+
+                    </div>
+
+
+
+
+
+
+                </div>
+
+    </section>
+    </div>
+
+
+
+
+
+
+
+
+
+    <script type="text/javascript">
+    
+        (function($) {
+            $.fn.serializeFormJSON = function() {
+
+                var o = {};
+                var a = this.serializeArray();
+                $.each(a, function() {
+
+                    var thename = this.name;
+                    //	console.log(thename);
+                    //	thename = thename.replace(/^(email)/,"");
+                    //	console.log(thename);
+
+
+                    if (o[thename]) {
+
+                        if (!o[thename].push) {
+                            o[thename] = [o[thename]];
+                        }
+                        o[thename].push(this.value || '');
+                    } else {
+
+                        o[thename] = this.value || '';
+                    }
+                });
+                return o;
+            };
+        })(jQuery);
+
+
+
+        function checkinput(name) {
+            $("#formlabel_" + name).css({
+                'color': 'initial'
+            });
+
+            //  alert($("#form_"+name).val());
+
+            if (($("#form_" + name).val() == null) || ($("#form_" + name).val() == "") || ($("#form_" + name).val().length < 2)) {
+                console.log("Nix drin, setze #formlabel_" + name + " auf rot");
+                $("#formlabel_" + name).css({
+                    'color': 'red'
+                });
+                return 1;
+            } else {
+                // console.log (""+name+"='"+$("#form_"+name).val().trim()+"' length:'"+$("#form_"+name).val().length+"' ");
+            }
+            return 0;
+        }
+
+        function checkinput_cb(name) {
+            $("#formlabel_" + name).css({
+                'color': 'initial'
+            });
+
+            //  alert($("#form_"+name).val());
+
+            if ( //($("#form_cb_"+name).val()== null)||
+                ($("#form_cb_" + name).is(':checked') == false)) {
+                console.log("Nix drin, setze #formlabel_" + name + " auf rot");
+                $("#formlabel_" + name).css({
+                    'color': 'red'
+                });
+                return 1;
+            } else {}
+            return 0;
+        }
+
+        function dosend3() {
+            /* var regdaten = {
+                  email: $("#form_emaile1").val(),
+                  pw1: $("#form_passwordp1").val(),
+                  pw2: $("#form_passwordp2").val()
+              }*/
+            var data;
+
+            var errorcnt = 0;
+            errorcnt += checkinput_cb("wewe");
+            //errorcnt += checkinput_cb("dataprotection");
+            errorcnt += checkinput("email");
+
+            if (errorcnt > 0) {
+                console.log("--------Werte fehlen-!---------");
+                dosendtrack("formcheck", "missingelements");
+                return;
+            }
+
+            try {
+                data = $('#loginform2id').serializeFormJSON();
+
+                console.log("------------------");
+                console.log("" + JSON.stringify(data));
+                console.log("------------------");
+
+
+            } catch (err) {
+                alert(err.message);
+            }
+
+            $('#response3 pre').html('sending..');
+            dofunnelstep("STEP-FORM", "done");
+            $.ajax({
+                url: '/cloudwebfunnel/ajaxsave',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);
+                    //var data = $.parseJSON(msg);
+                    $('#response3 pre').html(msg.resulttxt);
+
+                    console.log("Got back BRAND:'" + msg.resulttxt + "'")
+                    if (msg.resultcode == "3") {
+                        $('#response3 pre').html('Error');
+                        $("#response3 pre").css("background-color", "red");
+                        $("#response3 pre").css("color", "white");
+                    }
+                    if (msg.resultcode == "1") {
+                        $('#response3 pre').html('Data saved');
+                        $("#response3 pre").css("background-color", "green");
+                    }
+
+                    document.location.href = "/cloudwebfunnel/confirmsendemail?cid={{cid}}";
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    alert("get session failed " + errorThrown);
+                },
+                data: JSON.stringify(data)
+            });
+        }
+
+
+
+        //-----------------------------------------
+
+
+
+        function dofunnelstep(inkey, invalue) {
+            var data = {
+                funnelid: "{{funnelid}}",
+                cid: "{{cid}}",
+                mode: "funnelstep",
+                key: inkey,
+                value: invalue
+            };
+            var errorcnt = 0;
+
+            $.ajax({
+                url: '/cloudwebfunnel/ajaxsave?mode=funnelstep',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    //alert("get session failed " + errorThrown);
+                },
+                data: JSON.stringify(data)
+            });
+        }
+        //-----------------------------------------
+
+
+
+        function dosendtrack(inkey, invalue) {
+            var data = {
+                cid: "{{cid}}",
+                mode: "track",
+                key: inkey,
+                value: invalue
+            };
+            var errorcnt = 0;
+
+            $.ajax({
+                url: '/cloudwebfunnel/ajaxsave?mode=track',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    //alert("get session failed " + errorThrown);
+                },
+                data: JSON.stringify(data)
+            });
+        }
+
+        //-----------------------------------------
+
+        setTimeout(function() {
+            dosendtrack("ontime", "2s")
+        }, 2000);
+
+        setTimeout(function() {
+            dosendtrack("ontime", "15s")
+        }, 14000);
+
+        setTimeout(function() {
+            dosendtrack("ontime", "30s")
+        }, 30000);
+
+
+
+        document.getElementById("form_email").addEventListener("blur", function() {
+            dosendtrack("leaveform", "email")
+        });
+
+        function scroll_to_anchor(anchor_id){
+            console.log("lets scroll to:"+anchor_id);
+            var tag = $("#"+anchor_id);
+            $('html,body').animate({scrollTop: tag.offset().top},'slow');
+            $(window).scrollTop(tag.offset().top);
+        }
+
+    
+        $(document).ready(function () {
+            $( "#form_email" ).click(function() {
+//                console.log("klick");
+  //             scroll_to_anchor("formlabel_email"); //klappt nicht
+            });
+
+
+
+        });
+    </script>

@@ -1,0 +1,116 @@
+{
+   "funnelid":"24765466-174a-47f9-a120-9745e9f792fe",
+   "funneltitle":"R&uuml;gen im Herbst.. ",
+   "funneldescription":"Jetzt buchen!",
+   "funnelrobots":"noindex",
+   "funnelbackgroundcolor":"#fff",
+   "funnelfavicon":"https://www.namecheap.com/assets/img/nc-icon/favicon.ico",
+
+   "data":[
+      {
+         "pageid":"start",
+
+         "elements":[
+            {
+               "elementtype":"toplogoheader",
+               "elementid":"34b38a24-8b5c-43c9-87d6-d0f7f82b45dd",
+               "elementdata":{
+                  "text":"Hol dir dein pers&ouml;nliches Herbstangebot",
+                  "fontcolor":"#fff",
+                  "backgroundcolor":"#173248"
+               }
+            },
+            {
+               "elementtype":"h1",
+               "elementid":"34b38a24-8b5c-43c9-87d6-d0f7f82b95dd",
+               "elementdata":{
+                  "text":"Gewinne 2 kostenlose Tage deines Angebots bei uns im Herbst in Sellin auf R&uuml;gen",
+                   "fontcolor":"#e69400"
+               }
+            },
+            {
+               "elementtype":"h2",
+               "elementid":"34b38a24-8b5c-43c9-87d6-d0f7f82b95ef",
+               "elementdata":{
+                  "text":"Erlebe das einzigartige Licht",
+                  "fontcolor":"#173248;"
+               }
+            },
+	    {
+               "elementtype":"img",
+               "elementid":"34b38a24-8b5c-43c9-87d6-d0f7f82195ef",
+               "elementdata":{
+                  "url":"https://www.moewe13.de/wp-content/uploads/2022/09/5F8A095A-7293-40B7-B249-31DB056C8DE3-1024x1024.jpeg",
+                  "alt":"Ich bin schon alt",
+                  "title":"aber habe einen titel",
+                  "color":"#f00"
+               }
+            },
+
+            {
+               "elementtype":"text",
+               "elementid":"34b39d24-8b6c-43c9-87d6-d0f7f82b94dd",
+               "elementdata":[{
+			"text":"Auf einzigartigen Wanderwegen entlang des Hochufers oder am Strand entlang.."
+                     }]
+            },
+            {
+               "elementtype":"h2",
+               "elementid":"34b38a24-8b5c-43c9-87d6-d0f7f82b95ef",
+               "elementdata":{
+                  "text":"Unsere 2 Personen Wohnung ist ein idealer Startpunkt f&uuml;r deine Ausfl&uuml;ge",
+                  "fontcolor":"#173248;"
+               }
+            },	    {
+               "elementtype":"h1",
+               "elementid":"34b58a24-8b5c-43c9-87d6-d0f7f82b95ef",
+               "elementdata":{
+                  "text":"Dein pers&ouml;nliches Angebot + Gewinnchance",
+                  "fontcolor":"#e69400;"
+               }
+            },
+            {
+               "elementtype":"text",
+               "elementid":"34b39d24-8b6c-43c9-87d6-d0f7f82b94dd",
+               "elementdata":[{
+                        "text":" Gib einfach den Zeitraum an, wir senden dir ein Angebot und verlosen 2 kostenlose Tage.*"
+			 }
+                     ]
+            },
+	    {
+               "elementtype":"askform",
+               "elementid":"34b38a21-8b5c-43c9-87d6-d0f7f82b95ef",
+	       "backgroundcolor":"#cccccc",
+               "elementdata":{
+			"funneldata":"ruegen1d",
+			"buttoncolor":"#213147",			
+			"messagetext":"Deine Nachricht:",
+			"radio":{
+				"radioquestion":"Interessanter Zeitraum f&uuml;r dich:",
+				"radiokey":"timeframe",
+				"elements": ["Oktober","November","Dezember"]
+
+				
+			}
+                    }
+            },
+            {
+               "elementtype":"text",
+               "elementid":"34b39d24-8b6c-43c9-87d6-d0f7f82b94dd",
+               "elementdata":[{
+                        "text":"Bedingungen: Unter allen anfragenden verlosen wir einmalig 2 Tage extra auf das Angebot. Das gilt nur bei einer Mindestbuchung von 5 Tagen. Vom AngebotsPreis ziehen wir f&uuml;r 2 Tage die Kosten ab. Eine Buchung ist nat&uuml;rlich keine Pflicht.<br>Der Rechtsweg ist ausgeschlossen."
+			 },{
+                        "text":"Teilnehmer m&uuml;ssen 18 Jahre alt sein. Berechtigt sind alle Anfragen &uuml;ber dieses Formular. Benachrichtigung erfolgt im Angebot. Verg&uuml;stigung gilt nur f&uuml;r das jeweilige Angebot."
+			 }
+                     ]
+            },
+
+
+            {
+               "elementtype":"eventtracker",
+               "elementid":"34b58a24-3b5c-43c9-87d6-d0f7f82b95ef"
+            }
+       ]
+      }
+   ]
+}

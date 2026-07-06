@@ -1,0 +1,51 @@
+
+OLD
+
+  525  export JAVA_HOME=/opt/jdk1.7.0_72
+  526  export JRE_HOME=/opt/jdk1.7.0_72/jre
+  527  export PATH=$PATH:/opt/jdk1.7.0_72/bin:/opt/jdk1.7.0_72/jre/bin
+  601  mvn package
+  602  cp target/servletexample.war /var/lib/tomcat6/webapps/ 
+  603  mvn clean
+cp resources/mysql-connector-java-5.1.34-bin.jar /usr/share/tomcat6/lib/
+http://domain.de:8080/servletexample/
+mvn deploy;cp target/servletexample.war /var/lib/tomcat6/webapps/
+http://domain.de:8080/servletexample/?id=123
+export JAVA_HOME=/opt/jdk1.7.0_72;export JRE_HOME=/opt/jdk1.7.0_72/jre;export PATH=$PATH:/opt/jdk1.7.0_72/bin:/opt/jdk1.7.0_72/jre/bin
+mvn deploy;cp target/servletexample.war /var/lib/tomcat6/webapps/;tail -f /var/log/tomcat6/catalina.out
+
+
+mvn clean
+mvn package
+cp target/hclogos.war /var/lib/tomcat8/webapps
+
+url
+http://www.handycheats.de/hclogos/Nokia-1100.html
+
+NGINX
+    upstream localtomcat {
+        server localhost:8080 weight=5;
+    }
+    ....
+    
+
+ location ~ ^/hclogos/(.*)$ {  # OOPS!
+                proxy_redirect off;
+                proxy_max_temp_file_size 0;
+                #forward host bec apache does otherwise not work with virtual hosts
+                proxy_set_header Host $http_host;
+                proxy_pass http://localtomcat/hclogos/start?type=$1$2$is_args$args;
+                break;
+        }
+        location ~ ^/seiten/handyanleitungen/(.*)$ {  # OOPS!
+                proxy_redirect off;
+                proxy_max_temp_file_size 0;
+                #forward host bec apache does otherwise not work with virtual hosts
+                proxy_set_header Host $http_host;
+                proxy_pass http://localtomcat/hclogos/handyanleitung?type=$1$2$is_args$args;
+                break;
+        }
+
+
+Zuordnung zum Code dann via 
+src/main/webapp/WEB-INF/web.xml

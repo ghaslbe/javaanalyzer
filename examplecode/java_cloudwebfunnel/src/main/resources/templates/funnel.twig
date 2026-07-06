@@ -1,0 +1,14 @@
+{% extends "baselayout_simplepage_funnel.twig" %}
+{% set pagetitle="Willkommen in ihrem Rügen Urlaub" %}
+{% set pagemetadescription="Ostsee Urlaub wie für dich gemacht incl. kostenlosem R&uuml;genf&uuml;hrer" %}
+{% block main_content %}
+
+				{% if  codelist[0].fnlLpType == '1' %}
+          {% include 'funnel_formfunnel.twig'  %}
+        {% endif %}
+
+				{% if  codelist[0].fnlLpType == '2' %}
+         {% include 'funnel_linkfunnel.twig'  %}
+        {% endif %}
+
+{% endblock %}

@@ -1,0 +1,398 @@
+<div class="content-container" style="    padding-top: 60px;    padding-bottom: 60px;xbackground-color:{{evalue.backgroundcolor}}">
+  <div class="content" style="    text-align: left;">
+
+
+<style>
+
+form {
+  display: grid;
+  place-content: center;
+  min-height: 100vh;
+}
+
+.form-control {
+
+  font-size: 1.5rem;
+  /* font-weight: bold;*/
+  line-height: 1.1;
+  display: grid;
+  grid-template-columns: 1em auto;
+  gap: 0.3em;
+}
+
+@media (min-width:960px)and (max-width: 1279px){
+ /* iphone 13 */
+	.form-control {
+		  font-size: 2.4rem;
+	}
+}
+
+
+.form-control + .form-control {
+  margin-top: 1em;
+}
+
+.form-control:focus-within {
+  color: var(--form-control-color);
+}
+
+input[type=radio] {
+  /* Add if not using autoprefixer */
+  -webkit-appearance: none;
+  /* Remove most all native input styles */
+  -moz-appearance: none;
+       appearance: none;
+  /* For iOS < 15 */
+  background-color: var(--form-background);
+  /* Not removed via appearance */
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 1.15em;
+  height: 1.15em;
+  border: 0.15em solid currentColor;
+  border-radius: 50%;
+  transform: translateY(-0.075em);
+  display: grid;
+  place-content: center;
+}
+
+input[type=radio]::before {
+  content: "";
+  width: 0.65em;
+  height: 0.65em;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em var(--form-control-color);
+  /* Windows High Contrast Mode */
+  background-color: CanvasText;
+}
+
+input[type=radio]:checked::before {
+  transform: scale(1);
+}
+
+input[type=radio]:focus {
+  outline: max(2px, 0.15em) solid currentColor;
+  outline-offset: max(2px, 0.15em);
+}
+
+.lb{
+	width:100%;
+	font-size:1.5rem;
+	text-align:left;
+	color:#e69400;
+}
+@media (min-width:960px)and (max-width: 1279px){
+ /* iphone 13 */
+	.lb {
+		font-size: 2.4rem;
+	}
+}
+
+.rb{
+	width:100%;
+	font-size:2rem;
+}
+
+.rb input{
+    width: 100%;
+    height: 30px;
+    font-size: 2rem;
+    border-bottom: 1px solid #ccc;
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+    margin-bottom: 16px;
+    padding-top: 8px;
+}
+
+.rb textarea{
+    width: 100%;
+    height: 90px;
+    font-size: 2rem;
+    border: 1px solid #ccc;
+    margin-bottom: 16px;
+}
+
+@media (min-width:960px)and (max-width: 1279px){
+ /* iphone 13 */
+	.rb input{
+           height: 60px;
+           font-size: 3rem;
+	}
+	.rb textarea{
+           height: 120px;
+           font-size: 3rem;
+	}
+}
+
+
+.cb{
+	clear:both;
+}
+
+.rboxes{
+	margin-top:10px;
+	width:400px;
+}
+
+.formsubhead{
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #e69400;
+    font-size: 1.5rem;
+}
+
+@media (min-width:960px)and (max-width: 1279px){
+ /* iphone 13 */
+	.formsubhead{
+		 font-size: 2rem;
+	}
+}
+
+
+
+input[type=button], input[type=submit], input[type=reset] {
+  background-color: {{elementdatax.buttoncolor}};
+  border: none;
+  color: white;
+  padding: 16px 32px;
+  text-decoration: none;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+.thankyoudiv{
+ border: none;
+ color: white;
+ padding: 16px 32px;
+ text-decoration: none;
+ margin: 4px 2px;
+ cursor: pointer;
+ font-family: inherit;
+ margin-top: 20px !important;
+ font-size: 1.5rem;
+}
+
+@media (min-width:960px)and (max-width: 1279px){
+ /* iphone 13 */
+	input[type=button], input[type=submit], input[type=reset] {
+		  font-size: 2.4rem;
+		    height: 150px;
+    margin-top: 40px !important;
+	}
+}
+
+
+.submitbutton{
+ margin-top: 20px !important;
+    font-size: 1.5rem;
+}
+
+.formelementbox{
+ /* border:1px solid #ccc; */
+padding-top: 10px;
+}
+
+
+::placeholder {
+  color: #ccc;
+  opacity: 1; /* Firefox */
+  
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+ color: #ccc;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+ color: #ccc;
+}
+
+
+</style>
+
+
+
+<script type="text/javascript" src="/cloudexternal/3rd/jquery/jquery-3.3.1.min.js"></script>
+
+<script type="text/javascript">
+
+
+    
+        (function($) {
+            $.fn.serializeFormJSON = function() {
+
+                var o = {};
+                var a = this.serializeArray();
+                $.each(a, function() {
+                    var thename = this.name;                  
+                    if (o[thename]) {
+                        if (!o[thename].push) {
+                            o[thename] = [o[thename]];
+                        }
+                        o[thename].push(this.value || '');
+                    } else {
+
+                        o[thename] = this.value || '';
+                    }
+                });
+                return o;
+            };
+        })(jQuery);
+
+
+function checkinput(name) {
+            $("#formlabel_" + name).css({
+                'color': 'initial'
+            });
+            if (($("#form_" + name).val() == null) || ($("#form_" + name).val() == "") || ($("#form_" + name).val().length < 2)) {
+                console.log("Nix drin, setze #formlabel_" + name + " auf rot");
+                $("#formlabel_" + name).css({
+                    'background-color': 'red',
+                    'color': 'white',
+                });
+                return 1;
+            } else {
+                // console.log (""+name+"='"+$("#form_"+name).val().trim()+"' length:'"+$("#form_"+name).val().length+"' ");
+            }
+            return 0;
+}
+
+function dosend() {
+
+
+            var errorcnt = 0;
+            errorcnt += checkinput("email");
+
+            if (errorcnt > 0) {
+                console.log("--------Werte fehlen-!---------");
+		try {
+                dosendtrack("formcheck", "missingelements");
+		} catch(err) {}
+                return;
+            }
+
+
+		document.getElementById('response3').style.visibility = "visible";
+		document.getElementById('response3').style.display = "block";
+
+		$('#response3 pre').html('sende..');
+		$('#response3 pre').css("background-color", "rgb(253 53 53)");
+
+		sendData();
+		
+
+		$('#submitbutton').css("display", "none");
+		
+		return 0;
+	}
+
+
+function sendData() {
+
+
+//----- store needed data
+	try {
+      dosendtrack("form", "submit")
+      dofunnelstep("STEP-FORM", "done")
+  } catch(err) {
+		  //console.log("submitbutton not found");
+	}
+//----- store needed data
+
+
+//read data from form
+	var datain = $('#loginform2id').serializeFormJSON();
+
+//send data
+  	$.ajax({
+                data: JSON.stringify(datain),
+                url: '/cloudwebfunnel/ajaxdynsave',
+                type: 'post',
+                xhrFields: {
+                    withCredentials: true
+                },
+                dataType: 'json',
+                contentType: 'application/json',
+                success: function(msg) {
+                    console.log("got data:" + msg);              
+                    $('#response3 pre').html(msg.resulttxt);
+
+                    console.log("Got back BRAND:'" + msg.resulttxt + "'")
+                    if (msg.resultcode == "3") {
+                        $('#response3 pre').html('Ein Fehler ist aufgetreten');
+                        $("#response3 pre").css("background-color", "red");
+                        $("#response3 pre").css("color", "white");
+                    }
+                    if (msg.resultcode == "1") {
+	                    $('#response3 pre').html('Ihre Daten wurden gesendet, vielen Dank!');
+		                 	$('#response3 pre').css("background-color", "rgb(0 139 0)");
+		                 	$('#response3 pre').css("color", "#fff");
+                    }
+
+                   // document.location.href = "/dynfunnel/confirmpage";
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                        $("#response3 pre").css("background-color", "red");
+	                      $('#response3 pre').html('Ein Problem ist aufgetreten!');
+		              	    $('#response3 pre').css("color", "#fff");
+                        alert("get session failed " + errorThrown);
+                }
+       });
+
+}
+
+(function($) {
+//start in doc loaded here	
+
+})(jQuery);
+
+</script>
+
+
+
+
+
+
+<form style="display:initial;text-align:left;"  id="loginform2id">
+
+<div style="width:100%">
+
+<div class="formelementbox">
+<div  class="lb">Vorname- &amp; Nachname: </div>
+<div  class="rb"> <input required type="text" name="name" id=""  placeholder="Vor- &amp; Nachname" ></div>
+<div class="cb"></div></div>
+
+<div class="formelementbox"><div  class="lb" id="formlabel_email">Emailadresse <sup style="font-size: 0.5em;">(*Pflichtfeld)</sup>: </div><div class="rb"> <input required type="email" name="email" id="form_email" placeholder="E-Mail Adresse"></div><div class="cb"></div></div>
+<div class="formelementbox"><div  class="lb">{{elementdatax.messagetext}} </div><div class="rb"> <textarea name="message" id="" placeholder="Ihre Nachricht"></textarea></div><div class="cb"></div></div>
+</div>
+
+<input type="hidden" name="funneldata" value="{{elementdatax.funneldata}}">
+
+<input type="hidden" name="utm_source" value="{{utm_source}}">
+<input type="hidden" name="utm_campaign" value="{{utm_campaign}}">
+<input type="hidden" name="utm_medium" value="{{utm_medium}}">
+<input type="hidden" name="utm_content" value="{{utm_content}}">
+
+
+<div class="formsubhead">
+ {{elementdatax.radio.radioquestion}}<br>
+</div>
+ 
+<div class="rboxes">
+{% for radiovalue in elementdatax.radio.elements %} 
+  <label class="form-control">     <input type="radio" name="{{elementdatax.radio.radiokey}}" value="{{radiovalue}}"/>{{radiovalue}}</label>
+  {% endfor %}
+</div>
+
+  <input type="button" class="submitbutton" id="submitbutton" value="Hier klicken und unverbindlich anfragen" onclick="dosend();return false;">
+  <div style="display:none"  id="response3" ><pre class="thankyoudiv">Vielen Dank</pre></div>
+
+</form>
+
+  </div>
+</div>
+
