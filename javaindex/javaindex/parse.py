@@ -134,17 +134,22 @@ def _parse_type_decl(node, outer=None):
 
 
 def parse_file(path):
-    """Parse one .java file. Returns ParsedFile, or None if javalang chokes on it."""
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
-        src = fh.read()
+    """Parse one .java file. Returns (ParsedFile, None) or (None, error)."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            src = fh.read()
+    except OSError as exc:
+        return None, f"could not read file: {exc}"
     try:
         tree = javalang.parse.parse(src)
+        package = tree.package.name if tree.package else None
+        imports = [(imp.path, bool(imp.static), bool(imp.wildcard)) for imp in tree.imports]
+        types = [_parse_type_decl(t) for t in tree.types]
     except (javalang.parser.JavaSyntaxError, javalang.tokenizer.LexerError) as exc:
         return None, str(exc)
+    except Exception as exc:  # noqa: BLE001 -- one bad file must never abort a 100k-file build
+        return None, f"unexpected parser error: {exc!r}"
 
-    package = tree.package.name if tree.package else None
-    imports = [(imp.path, bool(imp.static), bool(imp.wildcard)) for imp in tree.imports]
-    types = [_parse_type_decl(t) for t in tree.types]
     return ParsedFile(path=path, package=package, imports=imports, types=types, source_lines=src.splitlines()), None
 
 
