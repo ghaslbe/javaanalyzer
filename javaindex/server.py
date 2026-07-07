@@ -9,7 +9,8 @@ Endpoints:
     GET /type/<fqn>                                  -- class detail page (HTML)
     GET /fragment/callers?method=<fqn>#<sig>          -- lazy-loaded caller drill-down (HTML fragment)
     GET /api/search?q=<term>&limit=30
-    GET /api/search?q=<term>&code=true&context=5   -- + package/class/method/snippet/callers per hit
+    GET /api/search?q=<term>&code=true&context=5   -- + package/class/method/snippet/callers per hit (flat, 1 level)
+    GET /api/search?q=<term>&nested=true&depth=3&context=3 -- same, but 'used_by' recursively nested N levels deep
     GET /api/slice?seed=<name-or-fqn>&depth=2
     GET /api/type/<fqn>
     GET /health
@@ -23,7 +24,7 @@ from flask import Flask, jsonify, render_template_string, request
 
 from javaindex.search import _callers_with_location, _occurrence
 from javaindex.search import search as run_search
-from javaindex.search import search_with_code
+from javaindex.search import search_nested, search_with_code
 from javaindex.slice import build_slice
 from javaindex.webui import CALLERS_FRAGMENT, SEARCH_PAGE, TYPE_PAGE, method_key
 
@@ -94,6 +95,16 @@ def api_search():
     limit = request.args.get("limit", 30, type=int)
     if not term.strip():
         return jsonify({"error": "missing ?q="}), 400
+
+    if request.args.get("nested", "").lower() in ("1", "true", "yes"):
+        # same idea as code=true, but 'used_by' is a recursive tree
+        # ({occurrence, used_by}) instead of a flat one-level list -- the
+        # same drill-down the HTML UI does lazily on click, pre-computed
+        # here as one JSON document.
+        context = request.args.get("context", 3, type=int)
+        depth = request.args.get("depth", 3, type=int)
+        results = search_nested(_db_path(), term, context=context, limit=limit, depth=depth)
+        return jsonify({"query": term, "depth": depth, "results": results})
 
     if request.args.get("code", "").lower() in ("1", "true", "yes"):
         # richer shape for handing to an LLM tool-call: package/class/method

@@ -94,6 +94,21 @@ die die betroffene Methode aufruft, denselben Ausschnitt an deren Aufrufstelle.
 Damit lässt sich allein aus der Suchausgabe nachvollziehen, wie eine Fundstelle
 mit anderen Klassen zusammenhängt, ohne die Dateien einzeln zu öffnen.
 
+`--code` zeigt "genutzt von" nur eine Ebene tief (flache Liste). Für mehrere
+Ebenen verschachtelt als JSON:
+
+```bash
+python -m javaindex.search index.sqlite "utm" --nested --depth 3 --context 3
+```
+
+Gibt für jeden Treffer `{"occurrence": ..., "used_by": [...]}` aus, wobei
+jeder Eintrag in `used_by` wieder dieselbe Form hat (`occurrence` +
+eigenes, rekursiv verschachteltes `used_by`) -- bis zu `--depth` Ebenen tief,
+oder bis keine weiteren Aufrufer mehr gefunden werden. Zyklen im Call-Graph
+(A ruft B ruft A) werden erkannt und abgebrochen statt in eine Endlosschleife
+zu laufen. Das ist exakt der Baum, den die Browser-Oberfläche (siehe unten)
+per Klick aufklappt -- hier als ein JSON-Dokument, ohne GUI.
+
 ## Slice fürs LLM
 
 ```bash
@@ -130,7 +145,8 @@ Flask-Server (`javaindex/webui.py`), läuft komplett offline.
 REST-Endpunkte für die Integration in andere Tools:
 
 - `GET /api/search?q=<term>&limit=30`
-- `GET /api/search?q=<term>&code=true&context=5` -- zusätzlich Package/Klasse/Methode + Code-Snippet je Treffer und je Aufrufer (Rückgabe von `search_with_code()`, siehe oben)
+- `GET /api/search?q=<term>&code=true&context=5` -- zusätzlich Package/Klasse/Methode + Code-Snippet je Treffer und je Aufrufer, flach/eine Ebene (Rückgabe von `search_with_code()`, siehe oben)
+- `GET /api/search?q=<term>&nested=true&depth=3&context=3` -- wie `code=true`, aber `used_by` rekursiv verschachtelt über `depth` Ebenen (Rückgabe von `search_nested()`, siehe oben)
 - `GET /api/slice?seed=<name-oder-fqn>&depth=2`
 - `GET /api/type/<fqn>` -- Felder/Methoden/Hierarchie einer einzelnen Klasse
 - `GET /health`

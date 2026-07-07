@@ -5,6 +5,7 @@ Usable as a library (search()) from the Flask backend, or as a CLI:
 """
 
 import argparse
+import json
 import os
 import sqlite3
 
@@ -48,10 +49,10 @@ def _enclosing_method(cur, file_id, line):
 
 
 def _callers_with_location(cur, method_id, limit=20):
-    """Like _callers_of, but keeps the call site (file/line) so we can show
-    a code snippet of the calling code too."""
+    """Like _callers_of, but keeps the call site (file/line) and the
+    caller's own method id (so its callers can be resolved recursively)."""
     rows = cur.execute(
-        """SELECT DISTINCT t.fqn, m.signature, c.line, f.path
+        """SELECT DISTINCT m.id, t.fqn, m.signature, c.line, f.path
            FROM calls c
            JOIN methods m ON m.id = c.caller_method_id
            JOIN types t ON t.id = m.type_id
@@ -60,7 +61,10 @@ def _callers_with_location(cur, method_id, limit=20):
            LIMIT ?""",
         (method_id, limit),
     ).fetchall()
-    return [{"fqn": fqn, "signature": sig, "path": path, "line": line} for fqn, sig, line, path in rows]
+    return [
+        {"method_id": mid, "fqn": fqn, "signature": sig, "path": path, "line": line}
+        for mid, fqn, sig, line, path in rows
+    ]
 
 
 def _package_of(cur, path):
@@ -177,11 +181,10 @@ def search(db_path, term, limit=30):
     return results
 
 
-def search_with_code(db_path, term, context=5, limit=30):
-    """Like search(), but for every hit (and every caller of the enclosing
-    method) returns package/class/method plus a +/- `context` line code
-    snippet -- enough to see how pieces hang together without opening the
-    files by hand."""
+def _search_with_used_by(db_path, term, context, limit, used_by_fn):
+    """Shared row-processing core for search_with_code()/search_nested() --
+    only how 'used_by' gets built differs (flat one level vs. a recursive
+    tree), everything else about walking the FTS hits is identical."""
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -210,11 +213,7 @@ def search_with_code(db_path, term, context=5, limit=30):
                 (row["ref_id"],),
             ).fetchone()
             occurrence = _occurrence(cur, row["path"], owner_fqn, signature, line, context)
-            used_by = [
-                _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
-                for c in _callers_with_location(cur, row["ref_id"])
-            ]
-            results.append({"kind": "method", "occurrence": occurrence, "used_by": used_by})
+            results.append({"kind": "method", "occurrence": occurrence, "used_by": used_by_fn(cur, row["ref_id"])})
 
         else:  # file: a raw-text hit -- find the enclosing method (if any) per matching line
             for hit in _matching_lines(row["path"], _tokens(term)):
@@ -222,10 +221,7 @@ def search_with_code(db_path, term, context=5, limit=30):
                 if enclosing:
                     method_id, owner_fqn, signature = enclosing
                     occurrence = _occurrence(cur, row["path"], owner_fqn, signature, hit["line"], context)
-                    used_by = [
-                        _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
-                        for c in _callers_with_location(cur, method_id)
-                    ]
+                    used_by = used_by_fn(cur, method_id)
                 else:
                     occurrence = _occurrence(cur, row["path"], None, None, hit["line"], context)
                     used_by = []
@@ -233,6 +229,54 @@ def search_with_code(db_path, term, context=5, limit=30):
 
     conn.close()
     return results
+
+
+def search_with_code(db_path, term, context=5, limit=30):
+    """Like search(), but for every hit (and every direct caller of the
+    enclosing method) returns package/class/method plus a +/- `context`
+    line code snippet -- enough to see how pieces hang together without
+    opening the files by hand. 'used_by' is a flat list, one level deep."""
+
+    def flat_used_by(cur, method_id):
+        return [
+            _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
+            for c in _callers_with_location(cur, method_id)
+        ]
+
+    return _search_with_used_by(db_path, term, context, limit, flat_used_by)
+
+
+def _used_by_tree(cur, method_id, context, depth, visited=frozenset()):
+    """Recursively resolve 'who calls this' up to `depth` levels. `visited`
+    is the set of method ids on the current path from the root -- passing a
+    new frozenset down (not mutating a shared one) means siblings don't
+    interfere with each other, only actual cycles (A calls B calls A) get
+    pruned, not legitimate diamonds (X reachable via both A and B)."""
+    if depth <= 0 or method_id in visited:
+        return []
+    visited = visited | {method_id}
+    tree = []
+    for c in _callers_with_location(cur, method_id):
+        occ = _occurrence(cur, c["path"], c["fqn"], c["signature"], c["line"], context)
+        tree.append(
+            {
+                "occurrence": occ,
+                "used_by": _used_by_tree(cur, c["method_id"], context, depth - 1, visited),
+            }
+        )
+    return tree
+
+
+def search_nested(db_path, term, context=3, limit=20, depth=3):
+    """Like search_with_code(), but 'used_by' is nested recursively up to
+    `depth` levels -- the same drill-down the HTML UI does lazily on click,
+    pre-computed here as one JSON tree (each entry: {occurrence, used_by})."""
+    depth = max(1, min(depth, 6))  # a runaway depth on a big call graph gets huge fast
+
+    def tree_used_by(cur, method_id):
+        return _used_by_tree(cur, method_id, context, depth)
+
+    return _search_with_used_by(db_path, term, context, limit, tree_used_by)
 
 
 def _format_occurrence(occ, indent=""):
@@ -262,7 +306,18 @@ def main():
         "--code", action="store_true", help="Show package/class/method + code snippets (+/- --context lines)"
     )
     parser.add_argument("--context", type=int, default=5, help="Lines of context around each hit (default: 5)")
+    parser.add_argument(
+        "--nested",
+        action="store_true",
+        help="Print JSON with 'used_by' recursively nested (--depth levels) instead of text output",
+    )
+    parser.add_argument("--depth", type=int, default=3, help="How many caller levels to nest with --nested (default: 3)")
     args = parser.parse_args()
+
+    if args.nested:
+        results = search_nested(args.db, args.term, context=args.context, limit=args.limit, depth=args.depth)
+        print(json.dumps(results, indent=2))
+        return
 
     if args.code:
         for result in search_with_code(args.db, args.term, context=args.context, limit=args.limit):
